@@ -8,22 +8,24 @@ new() -> [].
 destroy(_) -> ok.
 
 write(Key,Element,Db) ->
-	OldKey = read(Key,Db),
+	{_,OldKey} = read(Key,Db),
 	if
-		OldKey == false -> [{Key,Element}|Db];
-		OldKey /= false -> Db %io:format("Key already exists")
+		OldKey == not_found -> [{Key,Element}|Db];
+		OldKey /= not_found -> Db %io:format("Key already exists")
 	end.
 	
 	
-read(_,[]) -> false;
-read(Key,[{H,V}|_]) when H == Key -> V;
+read(_,[]) -> {error, not_found};
+read(Key,[{H,V}|_]) when H == Key -> {ok,V};
 read(Key,[{H,_}|T]) when H /= Key ->
 	read(Key,T).
-	
-match(_,[]) -> false;
-match(Val,[{H,V}|_]) when V == Val -> H;
-match(Val,[{_,V}|T]) when V /= Val ->
-	match(Val,T).
+
+match(Val,Db) -> match(Val,Db,[]).
+match(_,[],Acc) -> Acc;
+match(Val,[{H,V}|T],Acc) when V == Val ->
+	match(Val,T,[H|Acc]);
+match(Val,[{_,V}|T],Acc) when V /= Val ->
+	match(Val,T,Acc).
 
 delete(Key,Db) -> delete(Key,Db,[]).
 delete(_,[],Acc) -> Acc;
